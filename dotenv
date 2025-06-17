@@ -1,0 +1,23 @@
+# Env data
+## Locales
+LANG=ru_RU.UTF-8
+LC_ALL=ru_RU.UTF-8
+LOCALE_GEN=ru_RU.UTF-8 UTF-8
+TZ=Europe/Moscow
+
+## jenkins/jenkins:<version>-<jdk>
+JENKINS_IMAGE_NAME=jenkins/jenkins
+JENKINS_IMAGE_TAG=2.514-jdk21
+JENKINS_CONTAINER_NAME=jenkins
+JENKINS_HOSTNAME=jenkins
+JENKINS_SLAVE_AGENT_PORT=50000 
+
+# Jenkins SSH agent
+JENKINS_SSH_DOCKERHUB_IMAGE_NAME=jenkins/ssh-agent
+JENKINS_SSH_DOCKERHUB_IMAGE_TAG=latest-jdk21
+JENKINS_SSH_IMAGE_NAME=jenkins-ssh-agent-1c
+JENKINS_SSH_IMAGE_TAG=latest-jdk21
+JENKINS_SSH_CONTAINER_NAME=sshjenkins
+JENKINS_SSH_HOSTNAME=sshjenkins
+JENKINS_AGENT_SSH_PUBKEY=<put here your ssh public key>
+OPM_URL="https://oscript.io/downloads/latest/x64/onescript-engine_1.9.3_all.deb"

@@ -1,0 +1,27 @@
+# ENV
+.env
+
+# DATA
+data/home/*
+data/ssh-agent/*
+image/jenkins-ssh-agent/*.run
+data/sonarqube_conf/*
+data/sonarqube_data/*
+data/sonarqube_logs/*
+data/sonarqube_extensions/*
+data/sonarqube_bundled_plugins/*
+data/sc_postgresql/*
+data/sc_postgresql_data/*
+data/keys
+data/trash
+
+# Except .gitkeep
+!data/home/.gitkeep
+!data/ssh-agent/.gitkeep
+!data/sonarqube_conf/.gitkeep
+!data/sonarqube_data/.gitkeep
+!data/sonarqube_logs/.gitkeep
+!data/sonarqube_extensions/.gitkeep
+!data/sonarqube_bundled_plugins/.gitkeep
+!data/sc_postgresql/.gitkeep
+!data/sc_postgresql_data/.gitkeep

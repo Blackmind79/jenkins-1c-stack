@@ -1,0 +1,14 @@
+# ENV
+.env
+
+# DATA
+data/home/*
+data/ssh-agent/*
+image/jenkins-ssh-agent/*.run
+data/keys
+data/trash
+
+# Except .gitkeep
+!data/home/.gitkeep
+!data/ssh-agent/.gitkeep
+!binary/.gitkeep

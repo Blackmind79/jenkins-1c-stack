@@ -1,0 +1,191 @@
+services:
+  jenkins:
+    restart: always
+    image: ${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG}
+    container_name: ${JENKINS_CONTAINER_NAME}
+    hostname: ${JENKINS_HOSTNAME}
+    networks:
+      frontend:
+    ports:
+      - "8080:8080/tcp"
+      - "50000:${JENKINS_SLAVE_AGENT_PORT}/tcp"
+    volumes:
+      - "jenkins_home:/var/jenkins_home"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ## Uncomment in case you see the message "This Jenkins instance appears to be offline."
+    #dns:
+    #  - 1.1.1.1
+    #  - 8.8.8.8
+    environment:
+      #- JENKINS_JAVA_OPTS=
+      #- JAVA_OPTS=-Dhudson.footerURL=http://mycompany.com
+      ## If this property is already set in JAVA_OPTS or JENKINS_JAVA_OPTS, then the value of JENKINS_SLAVE_AGENT_PORT will be ignored.
+      ## This port set up only at first init!
+      - JENKINS_SLAVE_AGENT_PORT=${JENKINS_SLAVE_AGENT_PORT}
+      - TZ="Europe/Moscow"
+    healthcheck:
+      # Use ${JENKINS_SLAVE_AGENT_PORT} port for healthcheck because 8080 needs auth
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:${JENKINS_SLAVE_AGENT_PORT}"]
+      start_period: 2m
+      interval: 30s
+      retries: 3
+      timeout: 3s
+
+  jenkins-ssh-agent:
+    build:
+      context: ./image/jenkins-ssh-agent
+      dockerfile: Dockerfile
+      args:
+        - JENKINS_SSH_DOCKERHUB_IMAGE_NAME=${JENKINS_SSH_DOCKERHUB_IMAGE_NAME}
+        - JENKINS_SSH_DOCKERHUB_IMAGE_TAG=${JENKINS_SSH_DOCKERHUB_IMAGE_TAG}
+        - OPM_URL=${OPM_URL}
+        # Locale
+        - LANG=${LANG}
+        - LC_ALL=${LC_ALL}
+        - LOCALE_GEN=${LOCALE_GEN}
+        - TZ=${TZ}
+    restart: always
+    image: ${JENKINS_SSH_IMAGE_NAME}:${JENKINS_SSH_IMAGE_TAG}
+    container_name: ${JENKINS_SSH_CONTAINER_NAME}
+    hostname: ${JENKINS_SSH_HOSTNAME}
+    networks:
+      frontend:
+    expose:
+      - "22/tcp"
+    # ports:
+    #   - "2200:22/tcp"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - JENKINS_AGENT_SSH_PUBKEY=${JENKINS_AGENT_SSH_PUBKEY}
+    volumes:
+      - jenkins-ssh-agent:/home/jenkins/agent:rw
+    depends_on:
+      jenkins:
+        condition: service_healthy      
+    healthcheck:
+      test: "ss | grep :22 > /dev/null; if [ 0 != $? ]; then exit 1; fi;"
+      start_period: 5s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
+  sc_sonarqube:
+    image: ${SONAR_IMAGE_NAME}:${SONAR_IMAGE_TAG}
+    container_name: ${SONAR_CONTAINER_NAME}
+    hostname: ${SONAR_HOSTNAME}
+    restart: always
+    ports:
+      - "9000:9000"
+    depends_on:
+      sc_db:
+        condition: service_healthy
+    links:
+      - sc_db:db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://db:5432/${SONAR_POSTGRES_DB}
+      SONAR_JDBC_USERNAME: ${SONAR_POSTGRES_USER}
+      SONAR_JDBC_PASSWORD: ${SONAR_POSTGRES_PASSWORD}
+    volumes:
+      - sc_sonarqube_conf:/opt/sonarqube/conf
+      - sc_sonarqube_data:/opt/sonarqube/data
+      - sc_sonarqube_logs:/opt/sonarqube/logs
+      - sc_sonarqube_extensions:/opt/sonarqube/extensions
+      - sc_sonarqube_bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+    networks:
+      frontend:      
+
+  sc_db:
+    restart: always
+    image: ${SONAR_POSTGRES_IMAGE_NAME}:${SONAR_POSTGRES_IMAGE_TAG}
+    container_name: ${SONAR_POSTGRES_CONTAINER_NAME}
+    hostname: ${SONAR_POSTGRES_HOSTNAME}
+    # expose:
+    #   - "5432:5432"
+    ports:
+      - "5432:5432"
+    command: postgres -c 'max_connections=300'
+    volumes:
+      - sc_postgresql:/var/lib/postgresql
+      - sc_postgresql_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${SONAR_POSTGRES_DB}
+      POSTGRES_USER: ${SONAR_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SONAR_POSTGRES_PASSWORD}
+    networks:
+      frontend:
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${SONAR_POSTGRES_DB} -U $${SONAR_POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  frontend:
+
+volumes:
+  
+  jenkins_home:
+    driver: local
+    driver_opts:
+      type: none
+      device: "./data/home"
+      o: bind
+
+  jenkins-ssh-agent:
+    driver: local
+    driver_opts:
+      type: none
+      device: "./data/ssh-agent"
+      o: bind
+
+  sc_sonarqube_conf:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sonarqube_conf"
+
+  sc_sonarqube_data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sonarqube_data"
+
+
+  sc_sonarqube_logs:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sonarqube_logs"
+
+  sc_sonarqube_extensions:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sonarqube_extensions"      
+
+  sc_sonarqube_bundled-plugins:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sonarqube_bundled_plugins"
+
+  sc_postgresql:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/sc_postgresql"
+
+  sc_postgresql_data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/scpostgresql_data"
