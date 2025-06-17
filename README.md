@@ -7,7 +7,7 @@
 Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
 Либо укажите внешнее имя хостовой машины, где развернут allure_api.
 
-Также вы можете установить платформу 1С в агент.
+Также вы можете установить платформу 1С в агент. К сожалению, из-за политики 1С нельзя скопировать платформу напрямую, требуется оплаченная подписка.
 Для этого положите файл платформы 1С для Linux *x86_64.run (например `setup-full-8.3.26.1498-x86_64.run`) в папку ./image/jenkins-ssh-agent.
 И соберите образ `docker compose build jenkins-ssh-agent`. Файл скопируется в образ и установится.
 >Можно установить несколько платформ, достаточно скопировать дистрибутивы. При сборке будут обнаружены все *.run файлы и установлены.
@@ -17,13 +17,18 @@
 Установка скриптов вынесена последним шагом, чтобы изменения касались последнего слоя и сборка шла быстро без переустановки других компонент.
 
 # Полезные ссылки и документация
-Описание              | Ссылка
-----------------------|-------
-Jenkins (Dockerhub)   | [Jenkins in Dockerhub](https://hub.docker.com/r/jenkins/jenkins)
-Jenkins (Github)      | [Jenkins in Github](https://github.com/jenkinsci/docker/blob/master/README.md)
-SonarQube (Dockerhub) | [SonarQube at Dockerhub](https://hub.docker.com/_/sonarqube)
-SonarQube (Github)    | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube)
+Описание               | Ссылка
+-----------------------|-------
+1C ITS                 | [1С ИТС](https://its.1c.ru). Требуется оплаченая подписка.
+Jenkins (Dockerhub)    | [Jenkins in Dockerhub](https://hub.docker.com/r/jenkins/jenkins)
+Jenkins (Github)       | [Jenkins in Github](https://github.com/jenkinsci/docker/blob/master/README.md)
+SonarQube (Dockerhub)  | [SonarQube at Dockerhub](https://hub.docker.com/_/sonarqube)
+SonarQube (Github)     | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube)
 SonarQube (Github compose.yaml) | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube/blob/master/example-compose-files/sq-with-postgres/docker-compose.yml)
+Allure API (Dockerhub) | [Allure API at Dockerhub](https://hub.docker.com/r/frankescobar/allure-docker-service)
+Allure API (GitHub)    | [Allure API at Github](https://github.com/fescobar/allure-docker-service)
+Allure UI (Dockerhub)  | [Allure UI at Dockerhub](https://hub.docker.com/r/frankescobar/allure-docker-service-ui)
+Allure UI (GitHub)     | [Allure UI at Github](https://github.com/fescobar/allure-docker-service-ui)
 
 # Основные шаги
 Пример файла `.env` прилагается к проекту как `dotenv`. Переименуйте его в `.env` И заполните совими данными.
