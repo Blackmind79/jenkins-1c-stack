@@ -12,6 +12,7 @@ data/sonarqube_extensions/*
 data/sonarqube_bundled_plugins/*
 data/sc_postgresql/*
 data/sc_postgresql_data/*
+data/allure_projects/*
 data/keys
 data/trash
 
@@ -25,3 +26,4 @@ data/trash
 !data/sonarqube_bundled_plugins/.gitkeep
 !data/sc_postgresql/.gitkeep
 !data/sc_postgresql_data/.gitkeep
+!data/allure_projects/.gitkeep

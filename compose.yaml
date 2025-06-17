@@ -121,6 +121,65 @@ services:
       timeout: 5s
       retries: 5
 
+  allure:
+    restart: always
+    image: "${ALLURE_API_IMAGE_NAME}:${ALLURE_API_IMAGE_TAG}"
+    container_name: "${ALLURE_API_CONTAINER_NAME}"
+    hostname: "${ALLURE_API_HOSTNAME}"
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: NONE
+      KEEP_HISTORY: 1
+      KEEP_HISTORY_LATEST: 25
+      SECURITY_USER: ${ALLURE_API_SECURITY_USER}
+      SECURITY_PASS: ${ALLURE_API_SECURITY_PASS}
+      SECURITY_VIEWER_USER: ${ALLURE_API_SECURITY_VIEWER_USER}
+      SECURITY_VIEWER_PASS: ${ALLURE_API_SECURITY_VIEWER_PASS}
+      SECURITY_ENABLED: 1
+      MAKE_VIEWER_ENDPOINTS_PUBLIC: 0
+    ports:
+      # could be accessed by: http://host.docker.internal:5050 or external hostname
+      - "5050:5050"
+    volumes:
+      - "allure_projects:/app/projects"
+    networks:
+      frontend:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:5050"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
+
+  allure-ui:
+    image: "${ALLURE_UI_IMAGE_NAME}:${ALLURE_UI_IMAGE_TAG}"
+    container_name: "${ALLURE_UI_CONTAINER_NAME}"
+    hostname: "${ALLURE_UI_HOSTNAME}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Enter `host.docker.internal` or external(!) hostname of server. Not docker hostname!
+      ALLURE_DOCKER_PUBLIC_API_URL: "http://host.docker.internal:5050"
+      ## Prefix for API
+      ALLURE_DOCKER_PUBLIC_API_URL_PREFIX: ""
+      # Prefix for UI
+      URL_PREFIX: ""
+    depends_on:
+      allure:
+        condition: service_healthy
+    ports:
+      - "5252:5252"
+    restart: always
+    networks:
+      frontend:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:5252"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
+
 networks:
   frontend:
 
@@ -188,4 +247,11 @@ volumes:
     driver_opts:
       type: "none"
       o: "bind"
-      device: "./data/scpostgresql_data"
+      device: "./data/sc_postgresql_data"
+
+  allure_projects:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/allure_projects"

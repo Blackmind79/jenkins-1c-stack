@@ -1,91 +1,71 @@
-# About
-Jenkins project
+# О проекте
+Данный проект содержит в себе основные программы для CI/CD и проверки кода.
 
-# Attention
-1. JVM options specifically for the Jenkins controller should be set through JENKINS_JAVA_OPTS, as other tools might also respond to the JAVA_OPTS environment variable.
-2. At the first run you can get initial admin password in folder `/var/jenkins_home/secrets/initialAdminPassword`
-3. For 1C also add plugins: SonarQube Scanner, Allure
+Стэк программ включает в себя: Jenkins, SonarQube, Allure
 
-# Links
-Link      | URL
-----------|----
-Dockerhub | [Jenkins in Dockerhub](https://hub.docker.com/r/jenkins/jenkins)
-Github    | [Jenkins in Github](https://github.com/jenkinsci/docker/blob/master/README.md)
+# ВНИМАНИЕ
+Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
+Либо укажите внешнее имя хостовой машины, где развернут allure_api.
 
-# Add agent
+# Полезные ссылки и документация
+Описание              | Ссылка
+----------------------|-------
+Jenkins (Dockerhub)   | [Jenkins in Dockerhub](https://hub.docker.com/r/jenkins/jenkins)
+Jenkins (Github)      | [Jenkins in Github](https://github.com/jenkinsci/docker/blob/master/README.md)
+SonarQube (Dockerhub) | [SonarQube at Dockerhub](https://hub.docker.com/_/sonarqube)
+SonarQube (Github)    | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube)
+SonarQube (Github compose.yaml) | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube/blob/master/example-compose-files/sq-with-postgres/docker-compose.yml)
 
-## First step
-First of all, create SSH keys (private and public)
+# Основные шаги
+0. Предполагается, что docker уже установлен в системе. Если нет, следуйте документации [Get Docker](https://docs.docker.com/get-started/get-docker)
+1. Создайте SSH-ключи для подключения агента к Jenkins.
 ```sh
-ssh-keygen -t ed25519 -f <filename in current dir> -N <password for opening key> -C "<comment>"
-```
-Example:
-```sh
+# ssh-keygen -t ed25519 -f <filename in current dir> -N <password for opening key> -C "<comment>"
+# Пример создания ключа без пароля:
 ssh-keygen -t ed25519 -f agent_key -N "" -C "ssh agent key without password"
 ```
-## Second step
-Define the enviroment variable in **.env** file `JENKINS_AGENT_SSH_PUBKEY` with pubkey you create. Run contaners with `docker compose up -d`.
-Example of **.env** file in file `dotenv`
-
-## Third step
-Enter the master container (`docker exec -it jenkins bash`):
-If you dont't create folder **$JENKINS_HOME/.ssh** earlier, prepare it:
-- create folder **$JENKINS_HOME/.ssh** (`mkdir $JENKINS_HOME/.ssh && chmod -R 700 $JENKINS_HOME/.ssh`)
-- create file **known_hosts** (`touch $JENKINS_HOME/.ssh/known_hosts && chmod -R 600 $JENKINS_HOME/.ssh/known_hosts`)
-If it is a stand-alone server for agents, scan keys to **known_hosts**:
-- scan keys from agent container (`ssh-keyscan -H ${JENKINS_SSH_AGENT_HOSTNAME_OR_IP} >> ~/.ssh/known_hosts`)
-In case of Docker container (not to scan every time) set "Non verifying Verification Strategy" in the menu on the left-hand side of the agent configuration panel in Jenkins Master.
-
-OR
-
-Do it in one-line:
-```sh
-docker compose up -d jenkins \
-  && docker exec -it jenkins bash -c "mkdir $JENKINS_HOME/.ssh && chmod -R 700 $JENKINS_HOME/.ssh && touch $JENKINS_HOME/.ssh/known_hosts && chmod -R 600 $JENKINS_HOME/.ssh/known_hosts" \
-  && docker compose up -d jenkins-ssh-agent
+2. Запустите проект
+- Соберите образ агента `docker compose build`, так как для агента требуется доустановить дополнительные пакеты.
+- Укажите в `.env` файле сгенерированный публичный ключ JENKINS_AGENT_SSH_PUBKEY
+- Запустите стэк `docker compose up -d`
+3. Настройте вход в Jenkins. Первоначальный пароль содержится в контейнере в `/var/jenkins_home/secrets/initialAdminPassword` (можно увидеть в папке проекта ) или в логах контейнера `docker logs jenkins`
+4. Добавьте агент в Jenkins, указав такие параметры как:
+```
+Удалённая корневая директория: /home/jenkins/agent
+Способ запуска: Launch agent via SSH
+Host Key Verification Strategy: Non verifying Verification Strategy (иначе при перезапуске постоянно будет отваливаться known_host)
+Credentials: SSH Username with private key (укажите ваш сгенерированный приватный ключ)
 ```
 
-## Fourth step
-Add agent thru Jenkins interface with SSH creds (username `jenkins` and private SSH key configured earlier)
+>Если у вас для агента используется хостовый сервер, то для безопасности можно сделать привязку через known_host.
+> Для этого выполните:
+> ```sh
+> docker compose up -d jenkins \
+>   && docker exec -it jenkins bash -c "mkdir $JENKINS_HOME/.ssh && chmod -R 700 $JENKINS_HOME/.ssh && touch $JENKINS_HOME/.ssh/known_hosts && chmod -R 600 $JENKINS_HOME/.ssh/known_hosts" \
+>   && docker compose up -d jenkins-ssh-agent \
+>   && docker exec -it jenkins bash -c "ssh-keyscan -H ${JENKINS_SSH_AGENT_HOSTNAME_OR_IP} >> $JENKINS_HOME/.ssh/known_hosts"
+> ```
+> Где JENKINS_SSH_AGENT_HOSTNAME_OR_IP - адрес вашего хоста для агента
 
-# Update plugins
-Get list of currently installed plugins
-```sh
-JENKINS_HOST=username:password@myhost.com:port
-curl -sSL "http://$JENKINS_HOST/pluginManager/api/xml?depth=1&xpath=/*/*/shortName|/*/*/version&wrapper=plugins" | perl -pe 's/.*?<shortName>([\w-]+).*?<version>([^<]+)()(<\/\w+>)+/\1 \2\n/g'|sed 's/ /:/'
-```
-| Note: you can see examples of installed plugins in file `current_plugins.xml`. So you can create plugins.txt file with list of plugins you need:
-
->plugins.txt
->```plaintext
->  ssh-credentials
->  mina-sshd-api-common
->  mina-sshd-api-core
->  ssh-slaves
->```
-
-To update plugins
-```sh
-JENKINS_IMAGE=jenkins/jenkins:lts-jdk17
-docker run -it ${JENKINS_IMAGE} bash -c "stty -onlcr && jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt --available-updates --output txt" >  plugins2.txt
-mv plugins2.txt plugins.txt
-```
-
-# SonarQube
-Context             | URL
---------------------|----
-Dockerhub           | [SonarQube at Dockerhub](https://hub.docker.com/_/sonarqube)
-Github              | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube)
-Github compose.yaml | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube/blob/master/example-compose-files/sq-with-postgres/docker-compose.yml)
-
-# Default Admins credentials
-Must be changed ASAP after installation!
+5. При первом запуске поменяйте административный пароль `SonarQube`
 ```
 Login: admin
 Password: admin
 ```
+6. Добавьте плагины в Jenkins такие как: SonarQube Scanner, Allure
+7. Добавьте плагины в SonarQube такие как: Russian Pack, 1C (BSL) Community Plugin, YAML Analyzer, ShellCheck Analyzer
 
-# Steps after migration
-After restore DB to new sql server edition or new sonarqube version (if needed), run manually setup
+# Обновление версии SonarQube
+Для обновления версии SonarQube, после изменения тэга образа, требуется запустить обновление.
+Зайдите в браузере на ваш сервер с суффиксом `/setup`:
+```
 http://<yourserver>:<port>/setup
 https://<your_server>/setup
+```
+Далее следуйте сообщениям мастера обновления.
+
+
+# Дополнительно
+Параметры JVM, предназначенные специально для контроллера Jenkins, должны быть установлены через JENKINS_JAVA_OPTS,
+поскольку другие инструменты также могут реагировать на переменную окружения JAVA_OPTS.
+
