@@ -7,6 +7,15 @@
 Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
 Либо укажите внешнее имя хостовой машины, где развернут allure_api.
 
+Также вы можете установить платформу 1С в агент.
+Для этого положите файл платформы 1С для Linux *x86_64.run (например `setup-full-8.3.26.1498-x86_64.run`) в папку ./image/jenkins-ssh-agent.
+И соберите образ `docker compose build jenkins-ssh-agent`. Файл скопируется в образ и установится.
+>Можно установить несколько платформ, достаточно скопировать дистрибутивы. При сборке будут обнаружены все *.run файлы и установлены.
+После чего перезапустите контейнер `docker compose down jenkins-ssh-agent && docker compose up -d jenkins-ssh-agent`
+
+Если необходимо добавить скрипты из библиотеки onescript, то добавьте их в последнем шаге в файле `./image/jenkins-ssh-agent/Dockerfile`.
+Установка скриптов вынесена последним шагом, чтобы изменения касались последнего слоя и сборка шла быстро без переустановки других компонент.
+
 # Полезные ссылки и документация
 Описание              | Ссылка
 ----------------------|-------
@@ -17,6 +26,9 @@ SonarQube (Github)    | [SonarQube at Github](https://github.com/SonarSource/doc
 SonarQube (Github compose.yaml) | [SonarQube at Github](https://github.com/SonarSource/docker-sonarqube/blob/master/example-compose-files/sq-with-postgres/docker-compose.yml)
 
 # Основные шаги
+Пример файла `.env` прилагается к проекту как `dotenv`. Переименуйте его в `.env` И заполните совими данными.
+В сборке агента `jenkins-ssh-agent` установлены менеджер пакетов opm и пакеты: opm, gitsync, vanessa-add, vanessa-automation, ibcmdrunner
+
 0. Предполагается, что docker уже установлен в системе. Если нет, следуйте документации [Get Docker](https://docs.docker.com/get-started/get-docker)
 1. Создайте SSH-ключи для подключения агента к Jenkins.
 ```sh

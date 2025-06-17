@@ -61,5 +61,8 @@ RUN rm -rf ${LOCAL_DOWNLOAD_PATH}/*
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Vanessa ADD, Vanessa-runner
-RUN opm install add \
-    && opm install vanessa-runner
+RUN opm install gitsync \
+    && opm install add \
+    && opm install vanessa-runner \
+    && opm install vanessa-automation \
+    && opm install ibcmdrunner

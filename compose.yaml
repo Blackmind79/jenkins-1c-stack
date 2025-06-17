@@ -27,7 +27,7 @@ services:
     healthcheck:
       # Use ${JENKINS_SLAVE_AGENT_PORT} port for healthcheck because 8080 needs auth
       test: ["CMD", "curl", "-f", "http://0.0.0.0:${JENKINS_SLAVE_AGENT_PORT}"]
-      start_period: 2m
+      start_period: 3m
       interval: 30s
       retries: 3
       timeout: 3s
@@ -95,16 +95,22 @@ services:
       - sc_sonarqube_bundled-plugins:/opt/sonarqube/lib/bundled-plugins
     networks:
       frontend:      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:9000"]
+      start_period: 1m
+      interval: 30s
+      retries: 3
+      timeout: 3s
 
   sc_db:
     restart: always
     image: ${SONAR_POSTGRES_IMAGE_NAME}:${SONAR_POSTGRES_IMAGE_TAG}
     container_name: ${SONAR_POSTGRES_CONTAINER_NAME}
     hostname: ${SONAR_POSTGRES_HOSTNAME}
-    # expose:
-    #   - "5432:5432"
-    ports:
+    expose:
       - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     command: postgres -c 'max_connections=300'
     volumes:
       - sc_postgresql:/var/lib/postgresql
