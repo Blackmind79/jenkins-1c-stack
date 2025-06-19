@@ -86,3 +86,11 @@ https://<your_server>/setup
 Параметры JVM, предназначенные специально для контроллера Jenkins, должны быть установлены через JENKINS_JAVA_OPTS,
 поскольку другие инструменты также могут реагировать на переменную окружения JAVA_OPTS.
 
+Если у вас возникает ошибка в Jenkins при работе с удаленными репозиториями при работе через SSH ключи, то сделайте следующее:
+```sh
+docker exec -it jenkins bash -c "mkdir ~/.ssh && chmod 700 ./.ssh && touch ./.ssh/known_hosts && chmod 600 ./.ssh/known_hosts"
+```
+И добавьте просканированный ключи удаленного репозитория в known_hosts:
+```sh
+docker exec -it jenkins bash -c "ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts"
+```
