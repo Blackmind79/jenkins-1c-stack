@@ -15,6 +15,9 @@ data/sc_postgresql_data/*
 data/allure_projects/*
 data/keys
 data/trash
+data/grafana/data/*
+data/grafana/logs/*
+data/prometheus/data/*
 
 # Except .gitkeep
 !data/home/.gitkeep
@@ -27,3 +30,6 @@ data/trash
 !data/sc_postgresql/.gitkeep
 !data/sc_postgresql_data/.gitkeep
 !data/allure_projects/.gitkeep
+!data/grafana/data/.gitkeep
+!data/grafana/logs/.gitkeep
+!data/prometheus/data/.gitkeep
