@@ -7,6 +7,9 @@
 Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
 Либо укажите внешнее имя хостовой машины, где развернут allure_api.
 
+Аналогично для сервиса SonarQube. Так как контейнеры хоть и видят друг друга, но не возваращют корректно данные.
+> При запуске агента, переменная PATH сбрасывается, поэтому пришлось определять в pipeline. Внесу изменения в следующей сборке
+
 Также вы можете установить платформу 1С в агент. К сожалению, из-за политики 1С нельзя скопировать платформу напрямую, требуется оплаченная подписка.
 Для этого положите файл платформы 1С для Linux *x86_64.run (например `setup-full-8.3.26.1498-x86_64.run`) в папку ./image/jenkins-ssh-agent.
 И соберите образ `docker compose build jenkins-ssh-agent`. Файл скопируется в образ и установится.
@@ -86,11 +89,19 @@ https://<your_server>/setup
 Параметры JVM, предназначенные специально для контроллера Jenkins, должны быть установлены через JENKINS_JAVA_OPTS,
 поскольку другие инструменты также могут реагировать на переменную окружения JAVA_OPTS.
 
-Если у вас возникает ошибка в Jenkins при работе с удаленными репозиториями при работе через SSH ключи, то сделайте следующее:
+# Возможные ошибки
+
+> [!NOTE]
+> Не стал добавлять в Dockerfile, так как могуть быть разные настройки безопасности.
+
+Если у вас возникает ошибка в Jenkins (или в Jenkins Agent) при работе с удаленными репозиториями при работе через SSH ключи, то сделайте следующее:
 ```sh
 docker exec -it jenkins bash -c "mkdir ~/.ssh && chmod 700 ./.ssh && touch ./.ssh/known_hosts && chmod 600 ./.ssh/known_hosts"
 ```
-И добавьте просканированный ключи удаленного репозитория в known_hosts:
+И добавьте просканированные ключи удаленного репозитория в known_hosts как в Jenkins, так и в агента:
 ```sh
-docker exec -it jenkins bash -c "ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts"
+docker exec -it jenkins bash -c "ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts"
+docker exec -it sshjenkins bash -c "ssh-keyscan -t ed25519 github.com >> /home/jenkins/.ssh/known_hosts && chmod 600 /home/jenkins/.ssh/known_hosts"
 ```
+> Внимание! Добавление `StrictHostKeyChecking no` в файл /var/jenkins_home/.ssh/config не дает результат!
+> Файл `config` должен отсутствовать в папке

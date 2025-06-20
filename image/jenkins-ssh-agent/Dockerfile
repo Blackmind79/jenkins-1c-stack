@@ -5,6 +5,9 @@ ARG JENKINS_SSH_DOCKERHUB_IMAGE_TAG=${JENKINS_SSH_DOCKERHUB_IMAGE_TAG:-"latest-j
 FROM ${JENKINS_SSH_DOCKERHUB_IMAGE_NAME}:${JENKINS_SSH_DOCKERHUB_IMAGE_TAG} AS ssh-agent
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+# JENKINS_AGENT_HOME - prebuild in base image
+
 # OPM url for download (in .env file)
 ARG OPM_URL
 # Set locales defaults, if no args
@@ -22,11 +25,11 @@ ARG LOCAL_DOWNLOAD_PATH=/opt/onec/binary
 
 # Install packages
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl iputils-ping wget curl iproute2 \
-    && mkdir $JENKINS_HOME/.ssh \
-    && chmod -R 700 $JENKINS_HOME/.ssh \
-    && touch $JENKINS_HOME/.ssh/known_hosts \
-    && chmod -R 600 $JENKINS_HOME/.ssh/known_hosts
+    && apt-get install --no-install-recommends -y curl iputils-ping wget iproute2 unzip \
+    && mkdir -p $JENKINS_AGENT_HOME/.ssh \
+    && chmod -R 700 $JENKINS_AGENT_HOME/.ssh \
+    && touch $JENKINS_AGENT_HOME/.ssh/known_hosts \
+    && chmod -R 600 $JENKINS_AGENT_HOME/.ssh/known_hosts
 
 # Locales
 RUN apt-get update && apt-get install -y locales \
@@ -50,7 +53,7 @@ ARG CMPS=server,ws,server_admin,client_full,client_thin,client_thin_fib,config_s
 RUN for file in $LOCAL_DOWNLOAD_PATH/*.run; do \
     if [ -f "$file" ]; then \
     chmod +x "$file"; \
-    "$file" --mode unattended --enable-components ${CMPS}; \
+    #    "$file" --mode unattended --enable-components ${CMPS}; \
     fi; \
     done
 
@@ -59,6 +62,27 @@ RUN rm -rf ${LOCAL_DOWNLOAD_PATH}/*
 
 # Clear apt cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install SonarQube scanner
+ARG SONAR_SCANNER_VERSION
+ARG SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION:-"7.0.2.4839"}
+RUN export SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION} \
+    && export SONAR_SCANNER_HOME=$JENKINS_AGENT_HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64 \
+    && export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+
+RUN mkdir -p $JENKINS_AGENT_HOME/.sonar/ \
+    && wget "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip" --output-document="$JENKINS_AGENT_HOME/.sonar/sonar-scanner.zip" \
+    && unzip -o "$JENKINS_AGENT_HOME/.sonar/sonar-scanner.zip" -d "$JENKINS_AGENT_HOME/.sonar/" \
+    && chown -R jenkins:jenkins /home/jenkins/.sonar
+
+# Export to environment
+ENV SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION}
+ENV SONAR_SCANNER_HOME="${JENKINS_AGENT_HOME}/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64"
+ENV PATH=${SONAR_SCANNER_HOME}/bin:${PATH}
+# Add PATH for all users
+## For bash users / sh users
+RUN echo 'export PATH="${SONAR_SCANNER_HOME}/bin:${PATH}"' >> /etc/bash.bashrc \
+    && echo 'export PATH="${SONAR_SCANNER_HOME}/bin:${PATH}"' >> /etc/profile
 
 # Install Vanessa ADD, Vanessa-runner
 RUN opm install gitsync \

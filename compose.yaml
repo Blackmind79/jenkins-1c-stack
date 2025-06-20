@@ -45,8 +45,17 @@ services:
         - LC_ALL=${LC_ALL}
         - LOCALE_GEN=${LOCALE_GEN}
         - TZ=${TZ}
+        # SonarScanner
+        - SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION}
     restart: always
     image: ${JENKINS_SSH_IMAGE_NAME}:${JENKINS_SSH_IMAGE_TAG}
+    # add ssh keys from github to known_hosts
+    command: >
+      bash -c "
+      mkdir -p /home/jenkins/.ssh
+      && ssh-keyscan -t ed25519 github.com >> /home/jenkins/.ssh/known_hosts
+      && chown -R jenkins:jenkins /home/jenkins/.ssh
+      && /usr/local/bin/setup-sshd"
     container_name: ${JENKINS_SSH_CONTAINER_NAME}
     hostname: ${JENKINS_SSH_HOSTNAME}
     networks:
