@@ -53,7 +53,7 @@ ARG CMPS=server,ws,server_admin,client_full,client_thin,client_thin_fib,config_s
 RUN for file in $LOCAL_DOWNLOAD_PATH/*.run; do \
     if [ -f "$file" ]; then \
     chmod +x "$file"; \
-    #    "$file" --mode unattended --enable-components ${CMPS}; \
+    "$file" --mode unattended --enable-components ${CMPS}; \
     fi; \
     done
 

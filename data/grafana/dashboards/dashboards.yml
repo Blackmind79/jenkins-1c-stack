@@ -1,0 +1,16 @@
+apiVersion: 1
+
+providers:
+  # Provider name (can be anything descriptive)
+  - name: "predefined_dashboards"
+    # Folder where dashboards will be stored in Grafana (empty = General folder)
+    folder: ""
+    # Type must be 'file'
+    type: file
+    # Disable dashboard deletion if the JSON file is removed
+    disableDeletion: true
+    # Allow updating dashboards via provisioning (false = prevent overwrites)
+    updateIntervalSeconds: 30
+    # Path where dashboard JSON files are stored
+    options:
+      path: /etc/grafana/provisioning/dashboards

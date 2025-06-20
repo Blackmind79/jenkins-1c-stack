@@ -70,6 +70,8 @@ services:
       - JENKINS_AGENT_SSH_PUBKEY=${JENKINS_AGENT_SSH_PUBKEY}
     volumes:
       - jenkins-ssh-agent:/home/jenkins/agent:rw
+      # for Allure reports export
+      - "allure_projects:/app/projects"
     depends_on:
       jenkins:
         condition: service_healthy      
@@ -195,25 +197,117 @@ services:
       start_period: 40s
       start_interval: 5s
 
+  grafana:
+    restart: always
+    image: ${GRAFANA_IMAGE_NAME}:${GRAFANA_IMAGE_TAG}
+    container_name: ${GRAFANA_CONTAINER_NAME}
+    hostname: ${GRAFANA_HOSTNAME}
+    networks:
+      frontend:
+    ports:
+      - "3000:3000"
+    environment:
+#     - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
+      - GF_INSTALL_PLUGINS=${GF_INSTALL_PLUGINS}
+      - GF_FEATURE_TOGGLES_ENABLE=${GF_FEATURE_TOGGLES_ENABLE}
+      - GF_DEFAULT_INSTANCE_NAME=${GF_DEFAULT_INSTANCE_NAME}
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      ## Set GF_SECURITY_ADMIN_PASSWORD if you need to set other password than admin/admin
+      # - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      # predefine datasources
+      - grafana-datasources:/etc/grafana/provisioning/datasources
+      - grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - grafana-data:/var/lib/grafana
+      - grafana-logs:/etc/grafana/logs
+    command:
+    #   - --config=/etc/grafana/grafana_custom.ini
+      - cfg:default.paths.logs=/etc/grafana/logs
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      ## Uncomment if use in Linux, comment winexporter below
+      node-exporter:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:3000"]
+      start_period: 5s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
+  prometheus:
+    restart: always
+    image: ${PROMETHEUS_IMAGE_NAME}:${PROMETHEUS_IMAGE_TAG}
+    container_name: ${PROMETHEUS_CONTAINER_NAME}
+    hostname: ${PROMETHEUS_HOSTNAME}
+    networks:
+      frontend:
+    expose:
+      - 9090
+    # ports:
+    #   - "9090:9090"
+    volumes:
+      - prom-data:/prometheus
+      - prom-configs:/etc/prometheus
+    healthcheck:
+      test: "wget --no-verbose --tries=3 --spider http://0.0.0.0:9090/metrics || exit 1"
+      start_period: 5s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
+  node-exporter:
+    restart: always
+    image: ${NODE_IMAGE_NAME}:${NODE_IMAGE_TAG}
+    container_name: ${NODE_CONTAINER_NAME}
+    hostname: ${NODE_HOSTNAME}
+    networks:
+      frontend:
+    expose:
+      - 9100
+    # ports:
+    #   - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude'
+      - '^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'
+    healthcheck:
+      test: "wget --no-verbose --tries=3 --spider http://0.0.0.0:9100/metrics || exit 1"
+      start_period: 5s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
 networks:
   frontend:
 
 volumes:
-  
+
+# --> Jenkins volumes  
   jenkins_home:
     driver: local
     driver_opts:
       type: none
       device: "./data/home"
       o: bind
+# <-- Jenkins volumes
 
+# --> Jenkins Agents volumes
   jenkins-ssh-agent:
     driver: local
     driver_opts:
       type: none
       device: "./data/ssh-agent"
       o: bind
+# <-- Jenkins Agents volumes
 
+# --> Sonarqube volumes
   sc_sonarqube_conf:
     driver: local
     driver_opts:
@@ -227,7 +321,6 @@ volumes:
       type: "none"
       o: "bind"
       device: "./data/sonarqube_data"
-
 
   sc_sonarqube_logs:
     driver: local
@@ -263,10 +356,59 @@ volumes:
       type: "none"
       o: "bind"
       device: "./data/sc_postgresql_data"
+# <-- Sonarqube volumes
 
+# --> Allure volumes
   allure_projects:
     driver: local
     driver_opts:
       type: "none"
       o: "bind"
       device: "./data/allure_projects"
+# <-- Allure volumes
+
+# --> Grafana volumes
+  grafana-data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/grafana/data"
+
+  grafana-logs:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/grafana/logs"
+  
+  grafana-datasources:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/grafana/datasources"
+
+  grafana-dashboards:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/grafana/dashboards"
+# <-- Grafana volumes
+
+# --> Prometheus volumes
+  prom-data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/prometheus/data"
+
+  prom-configs:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/prometheus/configs"
+# <-- Prometheus volumes

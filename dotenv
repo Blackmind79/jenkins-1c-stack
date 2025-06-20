@@ -1,11 +1,14 @@
 # Env data
 
 ## Locales
+#----------------------------------------------
 LANG=ru_RU.UTF-8
 LC_ALL=ru_RU.UTF-8
 LOCALE_GEN=ru_RU.UTF-8 UTF-8
 TZ=Europe/Moscow
 
+# Jenkins
+#----------------------------------------------
 ## jenkins/jenkins:<version>-<jdk>
 JENKINS_IMAGE_NAME=jenkins/jenkins
 JENKINS_IMAGE_TAG=2.515-jdk21
@@ -14,6 +17,7 @@ JENKINS_HOSTNAME=jenkins
 JENKINS_SLAVE_AGENT_PORT=50000 
 
 # Jenkins SSH agent
+#----------------------------------------------
 JENKINS_SSH_DOCKERHUB_IMAGE_NAME=jenkins/ssh-agent
 JENKINS_SSH_DOCKERHUB_IMAGE_TAG=latest-jdk21
 JENKINS_SSH_IMAGE_NAME=jenkins-ssh-agent-1c
@@ -25,6 +29,7 @@ OPM_URL="https://oscript.io/downloads/latest/x64/onescript-engine_1.9.3_all.deb"
 SONAR_SCANNER_VERSION=7.0.2.4839
 
 # Sonar
+#----------------------------------------------
 SONAR_IMAGE_NAME=sonarqube
 SONAR_IMAGE_TAG=25.6.0.109173-community
 SONAR_CONTAINER_NAME=sc_sonar
@@ -33,6 +38,7 @@ SONAR_JDBC_USERNAME=sonar
 SONAR_JDBC_PASSWORD=<sonar_strong_password>
 
 # Sonar PG
+#----------------------------------------------
 SONAR_POSTGRES_IMAGE_NAME=postgres
 SONAR_POSTGRES_IMAGE_TAG=17.5
 SONAR_POSTGRES_CONTAINER_NAME=sc_db
@@ -42,6 +48,7 @@ SONAR_POSTGRES_USER=sonar
 SONAR_POSTGRES_PASSWORD=<sonar_pg_strong_password>
 
 # Allure API
+#----------------------------------------------
 ALLURE_API_IMAGE_NAME=frankescobar/allure-docker-service
 ALLURE_API_IMAGE_TAG=2.27.0
 ALLURE_API_CONTAINER_NAME=allure_api
@@ -52,7 +59,35 @@ ALLURE_API_SECURITY_VIEWER_USER=user
 ALLURE_API_SECURITY_VIEWER_PASS=<allure_api_user_strong_password>
 
 # Allure UI
+#----------------------------------------------
 ALLURE_UI_IMAGE_NAME=frankescobar/allure-docker-service-ui
 ALLURE_UI_IMAGE_TAG=7.0.3
 ALLURE_UI_CONTAINER_NAME=allure_ui
 ALLURE_UI_HOSTNAME=allure_ui
+
+# Grafana
+#----------------------------------------------
+GRAFANA_IMAGE_NAME=grafana/grafana
+GRAFANA_IMAGE_TAG=11.5.2-ubuntu
+GRAFANA_CONTAINER_NAME=grafana
+GRAFANA_HOSTNAME=grafana
+#GF_SERVER_ROOT_URL=http://grafana.yourdomain.ru/
+GF_INSTALL_PLUGINS=grafana-clock-panel
+GF_FEATURE_TOGGLES_ENABLE=traceqlEditor metricsSummary
+GF_DEFAULT_INSTANCE_NAME=local-instance
+GF_SECURITY_ADMIN_USER=admin
+#GF_SECURITY_ADMIN_PASSWORD=<grafana_strong_password>
+
+# Prometheus
+#----------------------------------------------
+PROMETHEUS_IMAGE_NAME=prom/prometheus
+PROMETHEUS_IMAGE_TAG=v3.2.1
+PROMETHEUS_CONTAINER_NAME=prometheus
+PROMETHEUS_HOSTNAME=prometheus
+
+# Node exporter (LINUX)
+#----------------------------------------------
+NODE_IMAGE_NAME=prom/node-exporter
+NODE_IMAGE_TAG=v1.9.0
+NODE_CONTAINER_NAME=node-exporter
+NODE_HOSTNAME=node-exporter

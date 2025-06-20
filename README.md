@@ -4,6 +4,9 @@
 Стэк программ включает в себя: Jenkins, SonarQube, Allure
 
 # ВНИМАНИЕ
+! Сразу после установки зайдите в Grafana и смените стандартный пароль с admin/admin либо
+раскомментируйте в compose.yaml параметр `GF_SECURITY_ADMIN_PASSWORD` и укажите пароль в .env
+
 Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
 Либо укажите внешнее имя хостовой машины, где развернут allure_api.
 
@@ -32,6 +35,21 @@ Allure API (Dockerhub) | [Allure API at Dockerhub](https://hub.docker.com/r/fran
 Allure API (GitHub)    | [Allure API at Github](https://github.com/fescobar/allure-docker-service)
 Allure UI (Dockerhub)  | [Allure UI at Dockerhub](https://hub.docker.com/r/frankescobar/allure-docker-service-ui)
 Allure UI (GitHub)     | [Allure UI at Github](https://github.com/fescobar/allure-docker-service-ui)
+
+# Ссылки на программы, доступные после сборки
+Ссылки на программы, доступные после сборки на локальном компьютере.
+Если вы подключаетесь удаленно, то работайте с fqdn (то есть с hostname, например http://mybestserver.example.com)
+
+Описание               | Протокол | Ссылка
+-----------------------|----------|------
+Jenkins                | HTTP     | http://host.docker.internal:8080
+SonarQube              | HTTP     | http://host.docker.internal:9000
+Allure API             | HTTP     | http://host.docker.internal:5050
+Allure UI              | HTTP     | http://host.docker.internal:5252
+Jenkins SSH agent      | SSH      | (disabled) ssh jenkins@host.docker.internal -p 2200
+Grafana                | HTTP     | http://host.docker.internal:3000
+Prometheus             | HTTP     | (disabled) http://host.docker.internal:9090
+Node-Exporter          | HTTP     | (disabled) http://host.docker.internal:9100
 
 # Основные шаги
 Пример файла `.env` прилагается к проекту как `dotenv`. Переименуйте его в `.env` И заполните совими данными.
