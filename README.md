@@ -51,6 +51,7 @@ Allure UI (GitHub)     | [Allure UI at Github](https://github.com/fescobar/allur
 
 Описание               | Протокол | Ссылка
 -----------------------|----------|------
+VNC (Grapical desktop) | HTTP     | http://host.docker.internal:7860/vnc.html?host=host.docker.internal&port=7860
 Jenkins                | HTTP     | http://host.docker.internal:8080
 SonarQube              | HTTP     | http://host.docker.internal:9000
 Allure API             | HTTP     | http://host.docker.internal:5050

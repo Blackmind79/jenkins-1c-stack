@@ -164,11 +164,14 @@ RUN ssh-keyscan -t ed25519 github.com >> "${JENKINS_AGENT_HOME}/.ssh/known_hosts
 # ------------------------------------------------------------------------------
 # https://docs.docker.com/reference/build-checks/json-args-recommended/
 # Note currently workdir folder is: WORKDIR /home/jenkins
+# Warning: Do not use 'vncserver ... -display "${DISPLAY}", because it will use SSH to connect
+# For remote: vncserver -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -display "${DISPLAY}" -geometry "${VNC_RESOLUTION}" 2>&1 &
+# For local: vncserver -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -display "${DISPLAY}" -geometry "${VNC_RESOLUTION}" -localhost no 2>&1 &
 COPY --chmod=755 <<EOT /entrypoint.sh
 #!/usr/bin/env bash
 set -e;
 ## --> Background
-vncserver -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -display "${DISPLAY}" -geometry "${VNC_RESOLUTION}" 2>&1 &
+vncserver "${JENKINS_SSH_VNC_USER}${DISPLAY}" -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -geometry "${VNC_RESOLUTION}" -localhost no 2>&1 &
 "${JENKINS_AGENT_HOME}/noVNC/utils/novnc_proxy" --vnc 0.0.0.0:5901 --listen 0.0.0.0:7860 2>&1 &
 ## <-- Background
 setup-sshd
