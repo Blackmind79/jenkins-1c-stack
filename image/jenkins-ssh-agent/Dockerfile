@@ -52,6 +52,9 @@ RUN apt-get update \
     # --> Locales
     locales \
     # <-- Locales
+    # --> for EnvSubst
+    gettext \
+    # <-- for EnvSubst
     && mkdir -p "${JENKINS_AGENT_HOME}/.ssh" \
     && chmod -R 700 "${JENKINS_AGENT_HOME}/.ssh" \
     && touch "${JENKINS_AGENT_HOME}/.ssh/known_hosts" \
