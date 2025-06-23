@@ -2,10 +2,19 @@
 Данный проект содержит в себе основные программы для CI/CD и проверки кода.
 
 Стэк программ включает в себя: Jenkins, SonarQube, Allure
+# Требования
+1. При сборке `jenkins-ssh-agent` файл Dockerfile должен быть сохранен как UTF-8 с переводом строки LF (а не CRLF!)
+2. Образ jenkins-ssh-agent-1c после сборки занимает примерно 8.2Гб. Учитывайте при работе.
+3. Если вы хотите запустить **Chromium** из собранного агента, то зайдите внутрь него через [VNC](http://host.docker.internal:7860/vnc.html?host=host.docker.internal&port=7860),
+зайдите в терминал **MATE Terminal** или **XFCE Terminal** и запустите команду: `chromium --no-sandbox`
+
 
 # ВНИМАНИЕ
-! Сразу после установки зайдите в Grafana и смените стандартный пароль с admin/admin либо
-раскомментируйте в compose.yaml параметр `GF_SECURITY_ADMIN_PASSWORD` и укажите пароль в .env
+! Сразу после установки зайдите в Grafana и смените стандартный пароль с admin/admin, либо
+раскомментируйте в **compose.yaml** параметр `GF_SECURITY_ADMIN_PASSWORD` и укажите пароль в .env
+
+Также найден баг Chrome - иногда при входе в Allure UI пишет, что не найден сетевой путь. **Это нет так, баг CORS**.
+Удалите кэш сайта или откройте в режиме инкогнито. Либо запустите через Firefox или Edge.
 
 Из-за особенности настройки Allure, доступ к UI идет как: http://host.docker.internal:5252, если установлен локально.
 Либо укажите внешнее имя хостовой машины, где развернут allure_api.
@@ -47,6 +56,7 @@ SonarQube              | HTTP     | http://host.docker.internal:9000
 Allure API             | HTTP     | http://host.docker.internal:5050
 Allure UI              | HTTP     | http://host.docker.internal:5252
 Jenkins SSH agent      | SSH      | (disabled) ssh jenkins@host.docker.internal -p 2200
+Jenkins SSH VNC        | SSH      | http://host.docker.internal:7860/vnc.html?host=host.docker.internal&port=7860
 Grafana                | HTTP     | http://host.docker.internal:3000
 Prometheus             | HTTP     | (disabled) http://host.docker.internal:9090
 Node-Exporter          | HTTP     | (disabled) http://host.docker.internal:9100

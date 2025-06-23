@@ -47,29 +47,37 @@ services:
         - TZ=${TZ}
         # SonarScanner
         - SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION}
+        # VNC
+        - VNC_DISPLAY=${JENKINS_SSH_VNC_DISPLAY}
+        - VNC_RESOLUTION=${JENKINS_SSH_VNC_RESOLUTION}
+        - VNC_USER=${JENKINS_SSH_VNC_USER}
+      secrets:
+        - VNC_PASSWORD
     restart: always
     image: ${JENKINS_SSH_IMAGE_NAME}:${JENKINS_SSH_IMAGE_TAG}
-    # add ssh keys from github to known_hosts
-    command: >
-      bash -c "
-      mkdir -p /home/jenkins/.ssh
-      && ssh-keyscan -t ed25519 github.com >> /home/jenkins/.ssh/known_hosts
-      && chown -R jenkins:jenkins /home/jenkins/.ssh
-      && /usr/local/bin/setup-sshd"
+    ## Variant 2: Do not use Dockerfile for ssh keys from github to known_hosts
+    # command: >
+    #   bash -c "
+    #   mkdir -p /home/jenkins/.ssh
+    #   && ssh-keyscan -t ed25519 github.com >> /home/jenkins/.ssh/known_hosts
+    #   && chown -R jenkins:jenkins /home/jenkins/.ssh
+    #   && /usr/local/bin/setup-sshd"
     container_name: ${JENKINS_SSH_CONTAINER_NAME}
     hostname: ${JENKINS_SSH_HOSTNAME}
     networks:
       frontend:
     expose:
       - "22/tcp"
-    # ports:
+    ports:
     #   - "2200:22/tcp"
+      - "7860:7860/tcp"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - JENKINS_AGENT_SSH_PUBKEY=${JENKINS_AGENT_SSH_PUBKEY}
     volumes:
       - jenkins-ssh-agent:/home/jenkins/agent:rw
+      - jenkins-ssh-agent-downloads:/home/chromium/Downloads
       # for Allure reports export
       - "allure_projects:/app/projects"
     depends_on:
@@ -153,6 +161,14 @@ services:
       SECURITY_VIEWER_PASS: ${ALLURE_API_SECURITY_VIEWER_PASS}
       SECURITY_ENABLED: 1
       MAKE_VIEWER_ENDPOINTS_PUBLIC: 0
+      ## CORS Chrome bug
+      ALLURE_CORS_ENABLED: true
+      ## 10 min
+      ALLURE_CORS_MAX_AGE: 600
+      ALLURE_CORS_ALLOWED_ORIGINS: 'http://host.docker.internal:5252'
+      ALLURE_CORS_ALLOWED_HEADERS: 'x-xsrf-token,content-type,authorization,sec-ch-ua,sec-ch-ua-mobile,user-agent'
+      ALLURE_CORS_ALLOWED_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
+      ALLURE_CORS_ALLOW_CREDENTIALS: true
     ports:
       # could be accessed by: http://host.docker.internal:5050 or external hostname
       - "5050:5050"
@@ -172,14 +188,11 @@ services:
     image: "${ALLURE_UI_IMAGE_NAME}:${ALLURE_UI_IMAGE_TAG}"
     container_name: "${ALLURE_UI_CONTAINER_NAME}"
     hostname: "${ALLURE_UI_HOSTNAME}"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
-      # Enter `host.docker.internal` or external(!) hostname of server. Not docker hostname!
       ALLURE_DOCKER_PUBLIC_API_URL: "http://host.docker.internal:5050"
       ## Prefix for API
       ALLURE_DOCKER_PUBLIC_API_URL_PREFIX: ""
-      # Prefix for UI
+      ## Prefix for UI
       URL_PREFIX: ""
     depends_on:
       allure:
@@ -284,6 +297,10 @@ services:
       retries: 3
       timeout: 5s
 
+secrets:
+  VNC_PASSWORD:
+    environment: JENKINS_SSH_VNC_PASSWORD
+
 networks:
   frontend:
 
@@ -304,6 +321,13 @@ volumes:
     driver_opts:
       type: none
       device: "./data/ssh-agent"
+      o: bind
+
+  jenkins-ssh-agent-downloads:
+    driver: local
+    driver_opts:
+      type: none
+      device: "./data/ssh-agent-downloads"
       o: bind
 # <-- Jenkins Agents volumes
 

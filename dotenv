@@ -27,6 +27,10 @@ JENKINS_SSH_HOSTNAME=sshjenkins
 JENKINS_AGENT_SSH_PUBKEY=<put here your ssh public key>
 OPM_URL="https://oscript.io/downloads/latest/x64/onescript-engine_1.9.3_all.deb"
 SONAR_SCANNER_VERSION=7.0.2.4839
+JENKINS_SSH_VNC_DISPLAY=:1
+JENKINS_SSH_VNC_RESOLUTION=1280x720
+JENKINS_SSH_VNC_USER=jenkins # the same as image default user
+JENKINS_SSH_VNC_PASSWORD=<vnc_strong_password>
 
 # Sonar
 #----------------------------------------------

@@ -18,6 +18,7 @@ data/trash
 data/grafana/data/*
 data/grafana/logs/*
 data/prometheus/data/*
+data/ssh-agent-downloads/*
 
 # Except .gitkeep
 !data/home/.gitkeep
@@ -33,3 +34,4 @@ data/prometheus/data/*
 !data/grafana/data/.gitkeep
 !data/grafana/logs/.gitkeep
 !data/prometheus/data/.gitkeep
+!data/ssh-agent-downloads/.gitkeep
