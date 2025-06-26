@@ -2,10 +2,10 @@
 
 ## Locales
 #----------------------------------------------
-LANG=ru_RU.UTF-8
-LC_ALL=ru_RU.UTF-8
-LOCALE_GEN=ru_RU.UTF-8 UTF-8
-TZ=Europe/Moscow
+ENV_LANG=ru_RU.UTF-8
+ENV_LC_ALL=ru_RU.UTF-8
+ENV_LOCALE_GEN=ru_RU.UTF-8 UTF-8
+ENV_TZ=Europe/Moscow
 
 # Jenkins
 #----------------------------------------------

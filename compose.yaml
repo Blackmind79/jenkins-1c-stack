@@ -41,10 +41,10 @@ services:
         - JENKINS_SSH_DOCKERHUB_IMAGE_TAG=${JENKINS_SSH_DOCKERHUB_IMAGE_TAG}
         - OPM_URL=${OPM_URL}
         # Locale
-        - LANG=${LANG}
-        - LC_ALL=${LC_ALL}
-        - LOCALE_GEN=${LOCALE_GEN}
-        - TZ=${TZ}
+        - ENV_LANG=${ENV_LANG}
+        - ENV_LC_ALL=${ENV_LC_ALL}
+        - ENV_LOCALE_GEN=${ENV_LOCALE_GEN}
+        - ENV_TZ=${ENV_TZ}
         # SonarScanner
         - SONAR_SCANNER_VERSION=${SONAR_SCANNER_VERSION}
         # VNC

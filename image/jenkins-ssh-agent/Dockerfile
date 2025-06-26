@@ -11,17 +11,21 @@ ARG DEBIAN_FRONTEND=noninteractive
 # OPM url for download (in .env file)
 ARG OPM_URL
 # Set locales defaults, if no args
-ARG LANG
-ARG LC_ALL
-ARG LOCALE_GEN
-ARG LANG=${LANG:-"ru_RU.UTF-8"}
-ARG LC_ALL=${LC_ALL:-"ru_RU.UTF-8"}
-ARG LOCALE_GEN=${LOCALE_GEN:-"ru_RU.UTF-8 UTF-8"}
+# Arguments passend as ENV_*, because some linux images set POSIX or en_US.UTF-8 by default
+ARG ENV_LANG
+ARG ENV_LC_ALL
+ARG ENV_LOCALE_GEN
+ARG ENV_LANG=${ENV_LANG:-"ru_RU.UTF-8"}
+ARG ENV_LC_ALL=${ENV_LC_ALL:-"ru_RU.UTF-8"}
+ARG ENV_LOCALE_GEN=${ENV_LOCALE_GEN:-"ru_RU.UTF-8 UTF-8"}
 # Timezone defaults
-ARG TZ
-ENV TZ=${TZ:-"Europe/Moscow"}
+ARG ENV_TZ
+ENV TZ=${ENV_TZ:-"Europe/Moscow"}
 # Local vars
 ARG LOCAL_DOWNLOAD_PATH=/opt/onec/binary
+# Global users from main image
+ARG user
+ARG user=${user:-"jenkins"}
 # VNC
 ARG VNC_DISPLAY
 ARG VNC_RESOLUTION
@@ -69,19 +73,28 @@ RUN (apt-cache show lxlock && apt-get remove -y lxlock) || true \
     && (apt-cache show xscreensaver && apt-get remove -y xscreensaver) || true
 
 # Prepare configs for VNC
-RUN sed -i '/@xscreensaver -no-splash/d' /etc/xdg/lxsession/LXDE/autostart || echo "Конфигурация не существует, игнорирую"
-RUN git clone https://github.com/novnc/noVNC.git noVNC
-RUN mkdir -p "${JENKINS_AGENT_HOME}/.vnc" "/tmp"
-RUN chmod -R 777 "${JENKINS_AGENT_HOME}/.vnc" "/tmp"
+RUN sed -i '/@xscreensaver -no-splash/d' /etc/xdg/lxsession/LXDE/autostart || echo "Конфигурация не существует, игнорирую" \
+    && git clone "https://github.com/novnc/noVNC.git" noVNC \
+    && mkdir -p "${JENKINS_AGENT_HOME}/.vnc" "/tmp" \
+    && chmod -R 777 "${JENKINS_AGENT_HOME}/.vnc" "/tmp" \
+    && chown -R "${user}:${user}" "${JENKINS_AGENT_HOME}/.vnc" \
+    && chown -R "${user}:${user}" "/tmp"
 
-RUN touch "${JENKINS_AGENT_HOME}/.Xauthority" && chown ${VNC_USER}:${VNC_USER} "${JENKINS_AGENT_HOME}/.Xauthority"
+
+RUN touch "${JENKINS_AGENT_HOME}/.Xauthority" \
+    && chown ${user}:${user} "${JENKINS_AGENT_HOME}/.Xauthority"
+
 ENV HOME=${JENKINS_AGENT_HOME} \
     PATH=${JENKINS_AGENT_HOME}/.local/bin:$PATH
 
 # Locales
-RUN echo "LC_ALL=${LC_ALL}" >> /etc/environment \
-    && echo "LANG=${LANG}" > /etc/locale.conf \
-    && echo "${LOCALE_GEN}" >> /etc/locale.gen \
+RUN export "LC_ALL=${ENV_LC_ALL}" && export "LANG=${ENV_LANG}" && export "LOCALE_GEN=${ENV_LOCALE_GEN}" \
+    && echo "LANG=${ENV_LANG}" > /etc/locale.conf \
+    && echo "LANG=${ENV_LANG}" | tee /etc/default/locale \
+    && echo "LC_ALL=${ENV_LC_ALL}" | tee -a /etc/default/locale \
+    && sed -i "/LC_ALL*/d" /etc/environment && echo "LC_ALL=${ENV_LC_ALL}" >> /etc/environment \
+    # Uncomment the locale (remove '# ' from locale string for selected)
+    && sed -i "/${ENV_LOCALE_GEN}/s/^# //g" /etc/locale.gen \
     && locale-gen
 
 # Install OPM (with recomends, cause several packages could be changed)
@@ -151,15 +164,15 @@ ENV DISPLAY=${VNC_DISPLAY}
 ENV VNC_USER=${VNC_USER}
 ENV VNC_RESOLUTION=${VNC_RESOLUTION}
 
-# Get password from secrets and change users' password to it
-RUN --mount=type=secret,id=VNC_PASSWORD,env=VNC_PASSWORD,mode=0444,required=true \
-    VNC_PASSWORD=${VNC_PASSWORD:-"123456"}; \
-    echo "${VNC_USER}:${VNC_PASSWORD}" | chpasswd; \
-    echo "${VNC_PASSWORD}" | vncpasswd -f > ${JENKINS_AGENT_HOME}/.vnc/passwd
-
 # Add SSH keys for external GIT repositories 
 RUN ssh-keyscan -t ed25519 github.com >> "${JENKINS_AGENT_HOME}/.ssh/known_hosts" \
     && ssh-keyscan -t ed25519 gitlab.com >> "${JENKINS_AGENT_HOME}/.ssh/known_hosts"
+
+# Get password from secrets and change users' password to it. Before run server.
+RUN --mount=type=secret,id=VNC_PASSWORD,env=VNC_PASSWORD,mode=0444,required=true \
+    VNC_PASSWORD=${VNC_PASSWORD:-"123456"}; \
+    echo "${VNC_USER}:${VNC_PASSWORD}" | chpasswd; \
+    echo "${VNC_PASSWORD}" | vncpasswd -f > "${JENKINS_AGENT_HOME}/.vnc/passwd"
 
 # ------------------------------------------------------------------------------
 # https://docs.docker.com/reference/build-checks/json-args-recommended/
@@ -167,15 +180,35 @@ RUN ssh-keyscan -t ed25519 github.com >> "${JENKINS_AGENT_HOME}/.ssh/known_hosts
 # Warning: Do not use 'vncserver ... -display "${DISPLAY}", because it will use SSH to connect
 # For remote: vncserver -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -display "${DISPLAY}" -geometry "${VNC_RESOLUTION}" 2>&1 &
 # For local: vncserver -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -display "${DISPLAY}" -geometry "${VNC_RESOLUTION}" -localhost no 2>&1 &
+
 COPY --chmod=755 <<EOT /entrypoint.sh
 #!/usr/bin/env bash
 set -e;
+export JENKINS_AGENT_HOME="${JENKINS_AGENT_HOME}"
+# --> Locale
+export LANG="${ENV_LANG}"
+export LC_ALL="${ENV_LC_ALL}"
+export LOCALE_GEN="${ENV_LOCALE_GEN}"
+# <-- Locale
+# --> VNC
+export DISPLAY="${VNC_DISPLAY}"
+export VNC_USER="${VNC_USER}"
+export VNC_RESOLUTION="${VNC_RESOLUTION}"
+# <-- VNC
 ## --> Background
-vncserver "${JENKINS_SSH_VNC_USER}${DISPLAY}" -SecurityTypes VncAuth -rfbauth "${JENKINS_AGENT_HOME}/.vnc/passwd" -geometry "${VNC_RESOLUTION}" -localhost no 2>&1 &
-"${JENKINS_AGENT_HOME}/noVNC/utils/novnc_proxy" --vnc 0.0.0.0:5901 --listen 0.0.0.0:7860 2>&1 &
+runuser -l ${VNC_USER} -c "
+    export LANG=\'${ENV_LANG}\'
+    export LC_ALL=\'${ENV_LC_ALL}\'
+    export LOCALE_GEN=\'${ENV_LOCALE_GEN}\'
+    export DISPLAY=\'${VNC_DISPLAY}\'
+    export VNC_USER=\'${VNC_USER}\'
+    export VNC_RESOLUTION=\'${VNC_RESOLUTION}\'
+    /usr/bin/vncserver "${DISPLAY}" -SecurityTypes VncAuth -rfbauth \'${JENKINS_AGENT_HOME}/.vnc/passwd\' -geometry \"${VNC_RESOLUTION}\" -localhost no 2>&1 &
+    \'${JENKINS_AGENT_HOME}/noVNC/utils/novnc_proxy\' --vnc 0.0.0.0:5901 --listen 0.0.0.0:7860 2>&1 &
+"
 ## <-- Background
 setup-sshd
 EOT
+
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/entrypoint.sh"]
-CMD [ "/usr/local/bin/setup-sshd" ]
